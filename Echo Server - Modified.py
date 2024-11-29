@@ -24,7 +24,6 @@ myTCPSocket.bind(('0.0.0.0', 1024))#('localhost', 1024))
 myTCPSocket.listen(5)
 print("Server is listening on port 1024...")
 
-
 #Mongo connection
 cluster = "mongodb+srv://iselat5862:1dcHhlb35fFd7XWS@cluster0.goumq.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
 client = MongoClient(cluster, tlsCAFile=certifi.where())
