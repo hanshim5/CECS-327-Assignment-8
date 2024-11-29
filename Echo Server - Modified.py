@@ -9,7 +9,15 @@
 import socket
 from pymongo.mongo_client import MongoClient
 import certifi
+import getpass
 
+#Mongo connection
+password = getpass.getpass("Mongo db password: ")
+cluster = f"mongodb+srv://iselat5862:{password}@cluster0.goumq.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+client = MongoClient(cluster, tlsCAFile=certifi.where())
+db = client['test']
+print("Mongo Collection names:")
+print(db.list_collection_names())
 
 # Creating a TCP socket
 myTCPSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -21,12 +29,7 @@ myTCPSocket.bind(('0.0.0.0', 1024))#('localhost', 1024))
 myTCPSocket.listen(5)
 print("Server is listening on port 1024...")
 
-#Mongo connection
-cluster = "mongodb+srv://iselat5862:1dcHhlb35fFd7XWS@cluster0.goumq.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
-client = MongoClient(cluster, tlsCAFile=certifi.where())
-db = client['test']
-print("Mongo Collection names:")
-print(db.list_collection_names())
+
 
 
 while True:
