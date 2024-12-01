@@ -5,21 +5,37 @@
 # 172.20.10.2
 # 1026
 
-# 1. Receives the message from the client.
-# 2. Change the letters of the message to "capital letters" and send it back to the client by using the same socket.
-# 3. The server should be able to send multiple messages to the client. You may need to consider using the infinite loop as we discussed in the class.
-
 import socket
+from pymongo import MongoClient
+import certifi
+import getpass
+
+#Mongo connection
+try:
+    password = getpass.getpass("Mongo db password: ")
+    cluster = f"mongodb+srv://iselat5862:{password}@cluster0.goumq.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+    client = MongoClient(cluster, tlsCAFile=certifi.where())
+    db = client['test']
+    print("Mongo Collection names:")
+    print(db.list_collection_names())
+except Exception as e:
+    print(f"Error connecting to MongoDB: {e}")
+    exit()
 
 # Creating a TCP socket
 myTCPSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-# Binding socket to IP address and port number
-myTCPSocket.bind(('0.0.0.0', 1024))#('localhost', 1024))
+try:
+    # Binding socket to IP address and port number
+    myTCPSocket.bind(('0.0.0.0', 1024))#('localhost', 1024))
 
-# Listening for incoming client connections
-myTCPSocket.listen(5)
-print("Server is listening on port 1024...")
+    # Listening for incoming client connections
+    myTCPSocket.listen(5)
+    print("Server is listening on port 1024...")
+except socket.error as e:
+    print(f"Socket error: {e}")
+    exit()
+
 
 while True:
     try:
