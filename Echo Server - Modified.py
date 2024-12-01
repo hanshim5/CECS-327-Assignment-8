@@ -32,6 +32,7 @@ try:
     # Listening for incoming client connections
     myTCPSocket.listen(5)
     print("Server is listening on port 1024...")
+    
 except socket.error as e:
     print(f"Socket error: {e}")
     exit()
