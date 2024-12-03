@@ -68,27 +68,51 @@ while True:
                 current_pst = get_pst()
                 three_hours_ago = current_pst - timedelta(hours=3)
 
-                # Query the database
+
                 fridge_data = collection_virtual.find({
-                    "asset_uid": "433-6a1-735-3ei",  # actual fridge asset UID
+                    "payload.parent_asset_uid": "433-6a1-735-3ei", # actual fridge asset UID
                     "payload.timestamp": {
                         "$gte": int(three_hours_ago.timestamp() * 1000),
-                        "$lte": int(current_pst.timestamp() * 1000)
-                    }
-                })
+                        "$lte": int(current_pst.timestamp() * 1000)}
+                }, {"_id": 0, "payload.Moisture Meter - Moisture Meter - Fridge": 1}) #only get sensor data
+
                 moisture_readings = [
-                    float(doc["payload"]["Moisture Meter - Moisture Meter"]) for doc in fridge_data
+                    float(doc["payload"]["Moisture Meter - Moisture Meter - Fridge"]) for doc in fridge_data
                 ]
+
+
                 if moisture_readings:
                     avg_moisture = sum(moisture_readings) / len(moisture_readings)
                     avg_rh = (avg_moisture / 40) * 100
                     response = f"Average moisture (RH%) in the last 3 hours: {avg_rh:.2f}%"
                 else:
                     response = "No data found for the last 3 hours."
+
                 incomingSocket.send(response.encode('utf-8'))
+
+
+            elif myData == "2": #avg water consumption per cycle for dishwasher
+                dishwasher_data = collection_virtual.find({
+                    "payload.parent_asset_uid": "ddo-08g-5f4-jsp"
+                }, {"_id": 0, "payload.Water Consumption Sensor - Dishwasher": 1}) #only get sensor data
+
+                water_readings = [
+                    float(doc["payload"]["Water Consumption Sensor - Dishwasher"]) for doc in dishwasher_data
+                ]
+
+                if water_readings:
+                    avg_cons = sum(water_readings)/len(water_readings)
+                    response = f"Average Water Consumption (in gallons) per cycle: {avg_cons:.2f}"
+                else:
+                    response = "No data found for water consumption sensor."
+
+                incomingSocket.send(response.encode('utf-8'))
+
+
             else:
                 response = "Invalid query. Try again."
                 incomingSocket.send(response.encode('utf-8'))
+
 
         incomingSocket.close()
 
