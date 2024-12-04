@@ -133,13 +133,19 @@ while True:
                 current_utc = get_utc_now()
                 three_hours_ago = current_utc - timedelta(hours=3)
 
+                #retrieve fridge metadata
+                fridge_meta = collection_metadata.find_one({
+                    "customAttributes.name": "IoT Refrigerator"
+                })
+                fridge_id = fridge_meta["assetUid"]
+
                 # Query for the last 3 hours
                 fridge_data = collection_virtual.find({
                     "time": {
                         "$gte": three_hours_ago,
                         "$lt": current_utc
                     },
-                    "payload.parent_asset_uid": "433-6a1-735-3ei",
+                    "payload.parent_asset_uid": fridge_id,
                     "payload.Moisture Meter - Fridge": {"$exists": True}
                 })
 
@@ -160,8 +166,14 @@ while True:
 
 
             elif myData == "2": # avg water consumption per cycle for dishwasher
+                dish_meta = collection_metadata.find_one({
+                    "customAttributes.name": "Smart Dishwasher"
+                })
+                dish_id = dish_meta["assetUid"]
+
+
                 dishwasher_data = collection_virtual.find({
-                    "payload.parent_asset_uid": "ddo-08g-5f4-jsp"
+                    "payload.parent_asset_uid": dish_id
                 }, {"_id": 0, "payload.Water Consumption Sensor - Dishwasher": 1}) # only get sensor data
 
                 water_readings = BST()
@@ -187,7 +199,7 @@ while True:
                 })  # only Ammeter sensor data
 
                 fridge_2 = collection_virtual.find({
-                    "payload.sensor 2 a087ce6e-4be6-4a0b-ba16-8ad7016af76a": {"$exists":True}
+                    "payload.sensor 2 5e3b86ad-2107-414a-b0dc-9bb9d1473e25": {"$exists":True}
                 }) # only Ammeter sensor data
 
 
@@ -217,7 +229,7 @@ while True:
                     if hour not in unique2_hours:
                         unique2_hours.append(hour)
                         # adds only one sensor value per hour
-                        fridge_2_readings.insert(float(doc["payload"]["sensor 2 a087ce6e-4be6-4a0b-ba16-8ad7016af76a"]))
+                        fridge_2_readings.insert(float(doc["payload"]["sensor 2 5e3b86ad-2107-414a-b0dc-9bb9d1473e25"]))
 
 
                 # CONVERSIONS : kWh = Amps x Volts x Hours / 1000
