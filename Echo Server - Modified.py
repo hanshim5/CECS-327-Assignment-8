@@ -34,6 +34,64 @@ def get_pst():
     return utc_now.astimezone(pst)
 
 
+# BST Data Structure
+class BSTNode:
+    def __init__(self, value):
+        self.value = value
+        self.left = None
+        self.right = None
+
+
+class BST:
+    def __init__(self):
+        self.root = None
+
+    def insert(self, value):
+        if self.root is None:
+            self.root = BSTNode(value)
+        else:
+            self.insert_recursive(self.root, value)
+
+    def insert_recursive(self, node, value):
+        if value < node.value:
+            if node.left is None:
+                node.left = BSTNode(value)
+            else:
+                self.insert_recursive(node.left, value)
+        elif value > node.value:
+            if node.right is None:
+                node.right = BSTNode(value)
+            else:
+                self.insert_recursive(node.right, value)
+
+    def find_max(self):
+        return self._find_max(self.root)
+
+    def _find_max(self, node):
+        if node.right is None:
+            return node.value
+        return self._find_max(node.right)
+
+    def find_min(self):
+        return self._find_min(self.root)
+
+    def _find_min(self, node):
+        if node.left is None:
+            return node.value
+        return self._find_min(node.left)
+
+    def calculate_average(self):
+        total, count = self.calculate_sum_and_count(self.root)
+        return total / count if count > 0 else 0
+
+    def calculate_sum_and_count(self, node):
+        if node is None:
+            return 0, 0
+        left_sum, left_count = self.calculate_sum_and_count(node.left)
+        right_sum, right_count = self.calculate_sum_and_count(node.right)
+        return left_sum + right_sum + node.value, left_count + right_count + 1
+
+
 # Creating a TCP socket
 myTCPSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
