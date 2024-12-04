@@ -16,3 +16,6 @@ To make server port open only to local machine:
 
 To make server port open to the outside world:
 1. Use myTCPSocket.bind(('0.0.0.0', 1024)) instead of localhost in "Echo Server - Modified.py" code.
+
+**Link to Presentation**
+https://docs.google.com/presentation/d/1RXiattxdW9Ff_BaePf_Tz_LJcpDSEGQ-UqSVMeQVWKw/edit?usp=sharing
