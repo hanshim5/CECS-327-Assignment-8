@@ -108,6 +108,86 @@ while True:
 
                 incomingSocket.send(response.encode('utf-8'))
 
+            elif myData == "3": #which device consumed most electricity
+
+                fridge_1 = collection_virtual.find({
+                    "payload.Ammeter - Fridge": {"$exists":True}
+                }) #only Ammeter sensor data
+
+                dishwasher_data = collection_virtual.find({
+                    "payload.Ammeter - Dishwasher": {"$exists":True}
+                })  # only Ammeter sensor data
+
+                fridge_2 = collection_virtual.find({
+                    "payload.sensor 2 a087ce6e-4be6-4a0b-ba16-8ad7016af76a": {"$exists":True}
+                }) #only Ammeter sensor data
+
+
+                #store data for all devices
+                fridge_1_readings = []  # collects only one sensor value per hour
+                unique1_hours = []
+                for doc in fridge_1:
+                    time = doc["time"]
+                    hour = datetime(time.year, time.month, time.day, time.hour)
+                    if hour not in unique1_hours:
+                        unique1_hours.append(hour)
+                        fridge_1_readings.append(float(doc["payload"]["Ammeter - Fridge"]))
+
+
+                dishwasher_readings = [
+                    float(doc["payload"]["Ammeter - Dishwasher"]) for doc in dishwasher_data
+                ]
+
+                fridge_2_readings = []  # collects only one sensor value per hour
+                unique2_hours = []
+                for doc in fridge_2:
+                    time = doc["time"]
+                    hour = datetime(time.year, time.month, time.day, time.hour)
+                    if hour not in unique2_hours:
+                        unique2_hours.append(hour)
+                        fridge_2_readings.append(float(doc["payload"]["sensor 2 a087ce6e-4be6-4a0b-ba16-8ad7016af76a"]))
+
+
+                #CONVERSIONS : kWh = Amps x Volts x Hours / 1000
+
+                #dishwasher: assuming 120 volts
+                #dishwasher: assuming 1 cycle = 1 hour
+                #dishwasher readings currently in Amperes
+                if dishwasher_readings:
+                    dish_avg_amps = sum(dishwasher_readings)/len(dishwasher_readings)
+                else:
+                    dish_avg_amps = 0
+                dish_kWh = (dish_avg_amps * 120 * len(dishwasher_readings))/1000
+
+                #fridge: assuming 120 volts
+                #fridge: readings currently in Amperes
+
+                #Smart Fridge 1
+                if fridge_1_readings:
+                    fr1_avg_amps = sum(fridge_1_readings) / len(fridge_1_readings)
+                else:
+                    fr1_avg_amps = 0
+                fr1_kWh = (fr1_avg_amps * 120 * len(unique1_hours)) / 1000
+
+                #Smart Fridge 2
+                if fridge_2_readings:
+                    fr2_avg_amps = sum(fridge_2_readings) / len(fridge_2_readings)
+                else:
+                    fr2_avg_amps = 0
+                fr2_kWh = (fr2_avg_amps * 120 * len(unique2_hours))/1000
+
+                max_kWh = max(dish_kWh, fr1_kWh, fr2_kWh)
+                devices = []
+                if fr1_kWh == max_kWh:
+                    devices.append("Smart Fridge 1")
+                if fr2_kWh == max_kWh:
+                    devices.append("Smart Fridge 2")
+                if dish_kWh == max_kWh:
+                    devices.append("Smart Dishwasher")
+
+
+                response = f"Max kWh consumed: {max_kWh} by following devices: {devices}"
+                incomingSocket.send(response.encode('utf-8'))
 
             else:
                 response = "Invalid query. Try again."
@@ -122,4 +202,4 @@ while True:
 
 myTCPSocket.close()
 
-#VFVxljUPSfYCoYPb
+#VFVxIjUPSfYCoYPb
