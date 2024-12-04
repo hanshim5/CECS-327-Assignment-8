@@ -12,22 +12,27 @@ import getpass
 from datetime import datetime, timedelta
 import pytz
 
-#Mongo connection
+# Mongo connection setup
 try:
     password = getpass.getpass("Mongo db password: ")
     cluster = f"mongodb+srv://iselat5862:{password}@cluster0.goumq.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+    
+    # Create MongoDB client with certificate authentication
     client = MongoClient(cluster, tlsCAFile=certifi.where())
     db = client['test']
+
+    # Collections within database
     collection_metadata = db['IoT Devices_metadata']
     collection_virtual = db['IoT Devices_virtual']
 
+    # Print available collections
     print("Mongo Collection names:")
     print(db.list_collection_names())
 except Exception as e:
     print(f"Error connecting to MongoDB: {e}")
     exit()
 
-# PST timezone
+# Get current time in PST timezone
 def get_pst():
     utc_now = datetime.now(pytz.utc)
     pst = pytz.timezone("America/Los_Angeles")
@@ -41,18 +46,19 @@ class BSTNode:
         self.left = None
         self.right = None
 
-
 class BST:
     def __init__(self):
         self.root = None
 
     def insert(self, value):
+        # Insert value into BST
         if self.root is None:
-            self.root = BSTNode(value)
+            self.root = BSTNode(value) # Create root if tree empty
         else:
             self.insert_recursive(self.root, value)
 
     def insert_recursive(self, node, value):
+        # Insertion logic
         if value < node.value:
             if node.left is None:
                 node.left = BSTNode(value)
@@ -65,26 +71,30 @@ class BST:
                 self.insert_recursive(node.right, value)
 
     def find_max(self):
+        # Find the maximum value in the BST
         return self._find_max(self.root)
 
     def _find_max(self, node):
         if node.right is None:
-            return node.value
+            return node.value  # Maximum value is the rightmost node
         return self._find_max(node.right)
 
     def find_min(self):
+        # Find the minimum value in the BST
         return self._find_min(self.root)
 
     def _find_min(self, node):
         if node.left is None:
-            return node.value
+            return node.value  # Minimum value is the leftmost node
         return self._find_min(node.left)
 
     def calculate_average(self):
+        # Calculate the average value of all nodes in the BST
         total, count = self.calculate_sum_and_count(self.root)
         return total / count if count > 0 else 0
 
-    def calculate_sum_and_count(self, node):
+    def calculate_sum_and_count(self, node): 
+        # Helper function to calculate the sum and count of nodes
         if node is None:
             return 0, 0
         left_sum, left_count = self.calculate_sum_and_count(node.left)
@@ -127,32 +137,32 @@ while True:
                 current_pst = get_pst()
                 three_hours_ago = current_pst - timedelta(hours=3)
 
-
                 fridge_data = collection_virtual.find({
                     "payload.parent_asset_uid": "433-6a1-735-3ei", # actual fridge asset UID
                     "payload.timestamp": {
                         "$gte": int(three_hours_ago.timestamp() * 1000),
                         "$lte": int(current_pst.timestamp() * 1000)}
-                }, {"_id": 0, "payload.Moisture Meter - Moisture Meter - Fridge": 1}) #only get sensor data
+                }, {"_id": 0, "payload.Moisture Meter - Fridge": 1}) # only get sensor data
+                
+                print("Fridge Data:", list(fridge_data))  # Convert cursor to list for debugging
 
-                moisture_readings = BST()
+                moisture_readings = BST() # Store readings in a BST and calculate the average
                 for doc in fridge_data:
-                    moisture_readings.insert(float(doc["payload"]["Moisture Meter - Moisture Meter - Fridge"]))
+                    moisture_readings.insert(float(doc["payload"]["Moisture Meter - Fridge"]))
 
                 avg_moisture = moisture_readings.calculate_average()
                 if avg_moisture == 0:
-                    response = "No data generated in past 3 hours."
+                    response = "\nNo data generated in past 3 hours.\n"
                 else:
                     avg_rh = (avg_moisture / 40) * 100
-                    response = f"Average moisture (RH%) in the last 3 hours: {avg_rh:.2f}%"
+                    response = f"\nAverage moisture (RH%) in the last 3 hours: {avg_rh:.2f}%\n"
                 incomingSocket.send(response.encode('utf-8'))
 
 
-            elif myData == "2": #avg water consumption per cycle for dishwasher
+            elif myData == "2": # avg water consumption per cycle for dishwasher
                 dishwasher_data = collection_virtual.find({
                     "payload.parent_asset_uid": "ddo-08g-5f4-jsp"
-                }, {"_id": 0, "payload.Water Consumption Sensor - Dishwasher": 1}) #only get sensor data
-
+                }, {"_id": 0, "payload.Water Consumption Sensor - Dishwasher": 1}) # only get sensor data
 
                 water_readings = BST()
                 for doc in dishwasher_data:
@@ -161,16 +171,16 @@ while True:
 
                 avg_cons = water_readings.calculate_average()
                 if avg_cons == 0:
-                    response = "No data found for water consumption sensor."
+                    response = "\nNo data found for water consumption sensor.\n"
                 else:
-                    response = f"Average Water Consumption (in gallons) per cycle: {avg_cons:.2f}"
+                    response = f"\nAverage Water Consumption (in gallons) per cycle: {avg_cons:.2f}\n"
                 incomingSocket.send(response.encode('utf-8'))
 
-            elif myData == "3": #which device consumed most electricity
+            elif myData == "3": # which device consumed most electricity
 
                 fridge_1 = collection_virtual.find({
                     "payload.Ammeter - Fridge": {"$exists":True}
-                }) #only Ammeter sensor data
+                }) # only Ammeter sensor data
 
                 dishwasher_data = collection_virtual.find({
                     "payload.Ammeter - Dishwasher": {"$exists":True}
@@ -178,18 +188,18 @@ while True:
 
                 fridge_2 = collection_virtual.find({
                     "payload.sensor 2 a087ce6e-4be6-4a0b-ba16-8ad7016af76a": {"$exists":True}
-                }) #only Ammeter sensor data
+                }) # only Ammeter sensor data
 
 
-                #store data for all devices
-                fridge_1_readings = BST() #holds one sensor value per hour
+                # store data for all devices
+                fridge_1_readings = BST() # holds one sensor value per hour
                 unique1_hours = []
                 for doc in fridge_1:
                     time = doc["time"]
                     hour = datetime(time.year, time.month, time.day, time.hour)
                     if hour not in unique1_hours:
                         unique1_hours.append(hour)
-                        #adds only one sensor value per hour
+                        # adds only one sensor value per hour
                         fridge_1_readings.insert(float(doc["payload"]["Ammeter - Fridge"]))
 
 
@@ -197,9 +207,9 @@ while True:
                 dish_hours = 0
                 for doc in dishwasher_data:
                     dishwasher_readings.insert(float(doc["payload"]["Ammeter - Dishwasher"]))
-                    dish_hours += 1   #assuming each data entry counts as 1 hour
+                    dish_hours += 1   # assuming each data entry counts as 1 hour
 
-                fridge_2_readings = BST() #holds one sensor value per hour
+                fridge_2_readings = BST() # holds one sensor value per hour
                 unique2_hours = []
                 for doc in fridge_2:
                     time = doc["time"]
@@ -210,21 +220,21 @@ while True:
                         fridge_2_readings.insert(float(doc["payload"]["sensor 2 a087ce6e-4be6-4a0b-ba16-8ad7016af76a"]))
 
 
-                #CONVERSIONS : kWh = Amps x Volts x Hours / 1000
+                # CONVERSIONS : kWh = Amps x Volts x Hours / 1000
 
-                #dishwasher: assuming 120 volts
-                #dishwasher: assuming 1 cycle = 1 hour
-                #dishwasher readings currently in Amperes
+                # dishwasher: assuming 120 volts
+                # dishwasher: assuming 1 cycle = 1 hour
+                # dishwasher readings currently in Amperes
                 dish_avg_amps = dishwasher_readings.calculate_average()
                 dish_kWh = (dish_avg_amps * 120 * dish_hours)/1000
 
-                #fridge: assuming 120 volts
-                #fridge: readings currently in Amperes
-                #Smart Fridge 1
+                # fridge: assuming 120 volts
+                # fridge: readings currently in Amperes
+                # Smart Fridge 1
                 fr1_avg_amps = fridge_1_readings.calculate_average()
                 fr1_kWh = (fr1_avg_amps * 120 * len(unique1_hours)) / 1000
 
-                #Smart Fridge 2
+                # Smart Fridge 2
                 fr2_avg_amps = fridge_2_readings.calculate_average()
                 fr2_kWh = (fr2_avg_amps * 120 * len(unique2_hours))/1000
 
@@ -238,20 +248,23 @@ while True:
                     devices.append("Smart Dishwasher")
 
 
-                response = f"Max kWh consumed: {max_kWh:.2f} by following devices: {devices}"
+                response = f"\nMax kWh consumed: {max_kWh:.2f} by following devices: {devices}\n"
                 incomingSocket.send(response.encode('utf-8'))
 
             else:
-                response = "Invalid query. Try again."
+                #Invalid query
+                response = "\nInvalid query. Try again.\n"
                 incomingSocket.send(response.encode('utf-8'))
 
-
+        #Close client connection
         incomingSocket.close()
 
     except socket.error as e:
         print(f"Socket error: {e}")
         break
 
+#Close server socket
 myTCPSocket.close()
 
 #VFVxIjUPSfYCoYPb
+#python "Echo Server - Modified.py"
