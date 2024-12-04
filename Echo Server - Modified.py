@@ -32,13 +32,6 @@ except Exception as e:
     print(f"Error connecting to MongoDB: {e}")
     exit()
 
-# Get current time in PST timezone
-def get_pst():
-    utc_now = datetime.now(pytz.utc)
-    pst = pytz.timezone("America/Los_Angeles")
-    return utc_now.astimezone(pst)
-
-
 # BST Data Structure
 class BSTNode:
     def __init__(self, value):
@@ -102,7 +95,6 @@ class BST:
         return left_sum + right_sum + node.value, left_count + right_count + 1
 
 
-
 # Creating a TCP socket
 myTCPSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
@@ -134,27 +126,35 @@ while True:
                 break
 
             if myData == '1': # Avg fridge moisture in past 3 hours
-                current_pst = get_pst()
-                three_hours_ago = current_pst - timedelta(hours=3)
+                def get_utc_now():
+                    return datetime.now(pytz.utc)
 
+                # Get current UTC time and calculate the range
+                current_utc = get_utc_now()
+                three_hours_ago = current_utc - timedelta(hours=3)
+
+                # Query for the last 3 hours
                 fridge_data = collection_virtual.find({
-                    "payload.parent_asset_uid": "433-6a1-735-3ei", # actual fridge asset UID
-                    "payload.timestamp": {
-                        "$gte": int(three_hours_ago.timestamp() * 1000),
-                        "$lte": int(current_pst.timestamp() * 1000)}
-                }, {"_id": 0, "payload.Moisture Meter - Fridge": 1}) # only get sensor data
-                
-                print("Fridge Data:", list(fridge_data))  # Convert cursor to list for debugging
+                    "time": {
+                        "$gte": three_hours_ago,
+                        "$lt": current_utc
+                    },
+                    "payload.parent_asset_uid": "433-6a1-735-3ei",
+                    "payload.Moisture Meter - Fridge": {"$exists": True}
+                })
 
                 moisture_readings = BST() # Store readings in a BST and calculate the average
                 for doc in fridge_data:
-                    moisture_readings.insert(float(doc["payload"]["Moisture Meter - Fridge"]))
+                    reading = doc["payload"]["Moisture Meter - Fridge"]
+                    if reading is not None:
+                        moisture_readings.insert(float(reading))  # Insert reading into BST
 
                 avg_moisture = moisture_readings.calculate_average()
                 if avg_moisture == 0:
                     response = "\nNo data generated in past 3 hours.\n"
                 else:
-                    avg_rh = (avg_moisture / 40) * 100
+                    # RH% normalization since sensor max value = 49
+                    avg_rh = (avg_moisture / 49) * 100
                     response = f"\nAverage moisture (RH%) in the last 3 hours: {avg_rh:.2f}%\n"
                 incomingSocket.send(response.encode('utf-8'))
 
