@@ -94,17 +94,22 @@ class BST:
         right_sum, right_count = self.calculate_sum_and_count(node.right)
         return left_sum + right_sum + node.value, left_count + right_count + 1
 
-
 # Creating a TCP socket
 myTCPSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 try:
     # Binding socket to IP address and port number
-    myTCPSocket.bind(('0.0.0.0', 1024))#('localhost', 1024))
+    host = input("Enter the IP address for the server to bind to (or press Enter for '0.0.0.0'): ")
+    if not host:
+        host = '0.0.0.0'  # Default to all interfaces
+    port = int(input("Enter the port number for the server to listen on: "))
+    print(f"Server is running on IP: {host} and listening on port: {port}...")
+
+    myTCPSocket.bind((host, port)) # Ex. ({VM's internal IP}, 1024)
 
     # Listening for incoming client connections
     myTCPSocket.listen(5)
-    print("Server is listening on port 1024...")
+    print(f"Server is running on IP: {host} and listening on port: {port}...")
 
 except socket.error as e:
     print(f"Socket error: {e}")
@@ -277,6 +282,3 @@ while True:
 
 #Close server socket
 myTCPSocket.close()
-
-#VFVxIjUPSfYCoYPb
-#python "Echo Server - Modified.py"
