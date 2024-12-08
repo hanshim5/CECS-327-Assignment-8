@@ -22,3 +22,6 @@ To make server port open to the outside world:
 
 **Link to Presentation**
 https://docs.google.com/presentation/d/1RXiattxdW9Ff_BaePf_Tz_LJcpDSEGQ-UqSVMeQVWKw/edit?usp=sharing
+
+**Link to Report**
+https://docs.google.com/document/d/12T0-dqpHloUMm-S3Yp0ANH2jb-4fhk6vDVpRqX6JSYg/edit?usp=sharing
